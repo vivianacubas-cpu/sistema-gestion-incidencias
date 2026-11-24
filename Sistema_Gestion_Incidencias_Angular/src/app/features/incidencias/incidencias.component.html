@@ -1,0 +1,95 @@
+<main class="page">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">I</div>
+      <div><span class="eyebrow">SISTEMA INSTITUCIONAL</span><h1>Gestión de Incidencias</h1></div>
+    </div>
+    <span class="top-tag">Aplicación Web CRUD</span>
+  </header>
+
+  <section class="intro">
+    <div>
+      <p class="eyebrow blue">CENTRO DE SOPORTE</p>
+      <h2>Panel de incidencias</h2>
+      <p class="subtitle">Registra, consulta y administra las incidencias institucionales.</p>
+    </div>
+    <button class="primary-btn" type="button" (click)="abrirNuevo()">＋ Nueva incidencia</button>
+  </section>
+
+  <section class="stats">
+    <article class="stat-card"><span class="stat-icon">▤</span><div><small>Total de incidencias</small><strong>{{ incidencias.length }}</strong></div></article>
+    <article class="stat-card"><span class="stat-icon warning">!</span><div><small>Prioridad alta</small><strong>{{ totalPrioridadAlta }}</strong></div></article>
+    <article class="stat-card"><span class="stat-icon success">✓</span><div><small>Resueltas</small><strong>{{ totalResueltas }}</strong></div></article>
+  </section>
+
+  <section class="panel">
+    <div class="panel-heading">
+      <div><h3>Listado de incidencias</h3><p>Administra los reportes registrados en el sistema.</p></div>
+      <span class="count">{{ incidenciasFiltradas.length }} registros</span>
+    </div>
+    <div class="filters">
+      <label class="search-box"><span>⌕</span><input type="search" placeholder="Buscar por código o título..." [(ngModel)]="busqueda"></label>
+      <select aria-label="Filtrar por prioridad" [(ngModel)]="filtroPrioridad">
+        <option value="">Prioridad: Todas</option>
+        <option *ngFor="let p of prioridades" [value]="p">{{ p }}</option>
+      </select>
+      <select aria-label="Filtrar por estado" [(ngModel)]="filtroEstado">
+        <option value="">Estado: Todos</option>
+        <option *ngFor="let e of estados" [value]="e">{{ e }}</option>
+      </select>
+      <button class="clear-btn" type="button" (click)="limpiarFiltros()">Limpiar</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>CÓDIGO</th><th>TÍTULO</th><th>PRIORIDAD</th><th>ESTADO</th><th>RESPONSABLE</th><th>FECHA</th><th>ACCIONES</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let item of incidenciasFiltradas">
+            <td><strong class="code">{{ item.codigo }}</strong></td>
+            <td><span class="title-cell">{{ item.titulo }}</span><small class="description-cell">{{ item.descripcion }}</small></td>
+            <td><span class="priority" [ngClass]="item.prioridad.toLowerCase()">{{ item.prioridad }}</span></td>
+            <td><span class="status" [ngClass]="item.estado === 'En proceso' ? 'proceso' : item.estado.toLowerCase()">{{ item.estado }}</span></td>
+            <td>{{ item.responsable }}</td>
+            <td>{{ item.fecha | date:'dd/MM/yyyy' }}</td>
+            <td><div class="actions">
+              <button type="button" title="Ver detalle" (click)="verDetalle(item)">Ver</button>
+              <button type="button" title="Editar" (click)="editar(item)">Editar</button>
+              <button type="button" class="delete" title="Eliminar" (click)="eliminar(item)">Eliminar</button>
+            </div></td>
+          </tr>
+          <tr *ngIf="incidenciasFiltradas.length === 0"><td colspan="7" class="empty">No se encontraron incidencias. Registra una nueva o modifica los filtros.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <p class="toast" *ngIf="mensaje">✓ {{ mensaje }}</p>
+  <footer>© 2026 Sistema de Gestión de Incidencias <span>Desarrollado con Angular + TypeScript</span></footer>
+</main>
+
+<div class="overlay" *ngIf="modalAbierto">
+  <section class="modal">
+    <div class="modal-head"><div><span class="eyebrow blue">{{ editandoId ? 'ACTUALIZAR REGISTRO' : 'NUEVO REGISTRO' }}</span><h3>{{ editandoId ? 'Editar incidencia' : 'Registrar incidencia' }}</h3></div><button class="close" type="button" (click)="cerrarModal()">×</button></div>
+    <form #incForm="ngForm" (ngSubmit)="guardar(incForm)">
+      <div class="form-grid">
+        <label class="full">Título <em>*</em><input name="titulo" [(ngModel)]="formulario.titulo" required minlength="4" maxlength="100" placeholder="Ej. Falla de conexión a internet"><small *ngIf="incForm.submitted && incForm.controls['titulo']?.invalid">Ingresa un título de al menos 4 caracteres.</small></label>
+        <label class="full">Descripción <em>*</em><textarea name="descripcion" [(ngModel)]="formulario.descripcion" required minlength="10" rows="3" placeholder="Describe el problema encontrado..."></textarea><small *ngIf="incForm.submitted && incForm.controls['descripcion']?.invalid">Describe la incidencia (mínimo 10 caracteres).</small></label>
+        <label>Prioridad<select name="prioridad" [(ngModel)]="formulario.prioridad" required><option *ngFor="let p of prioridades" [value]="p">{{ p }}</option></select></label>
+        <label>Estado<select name="estado" [(ngModel)]="formulario.estado" required><option *ngFor="let e of estados" [value]="e">{{ e }}</option></select></label>
+        <label>Responsable <em>*</em><input name="responsable" [(ngModel)]="formulario.responsable" required placeholder="Técnico asignado"></label>
+        <label>Fecha <em>*</em><input type="date" name="fecha" [(ngModel)]="formulario.fecha" required></label>
+      </div>
+      <div class="modal-actions"><button class="secondary-btn" type="button" (click)="cerrarModal()">Cancelar</button><button class="primary-btn" type="submit">{{ editandoId ? 'Guardar cambios' : 'Registrar incidencia' }}</button></div>
+    </form>
+  </section>
+</div>
+
+<div class="overlay" *ngIf="detalleAbierto && seleccionada">
+  <section class="modal detail-modal">
+    <div class="modal-head"><div><span class="eyebrow blue">DETALLE DE INCIDENCIA</span><h3>{{ seleccionada.titulo }}</h3></div><button class="close" type="button" (click)="cerrarModal()">×</button></div>
+    <div class="detail-code">{{ seleccionada.codigo }}</div>
+    <p>{{ seleccionada.descripcion }}</p>
+    <div class="detail-grid"><div><small>Prioridad</small><strong>{{ seleccionada.prioridad }}</strong></div><div><small>Estado</small><strong>{{ seleccionada.estado }}</strong></div><div><small>Responsable</small><strong>{{ seleccionada.responsable }}</strong></div><div><small>Fecha de registro</small><strong>{{ seleccionada.fecha | date:'dd/MM/yyyy' }}</strong></div></div>
+    <div class="modal-actions"><button class="primary-btn" type="button" (click)="cerrarModal()">Cerrar</button></div>
+  </section>
+</div>
